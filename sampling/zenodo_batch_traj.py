@@ -94,9 +94,13 @@ def main(argv=None):
         if archive:
             archive.mkdir(parents=True, exist_ok=True)
         for sid, traj in todo:
-            if archive:
+            traj = Path(traj)
+            # Never treat an already-archived file as a new source: doing so
+            # would unlink the only copy (dst == traj).
+            if archive and traj.parent.resolve() != archive.resolve():
                 import shutil
-                dst = archive / traj.name.replace("traj.", f"{sid}.")
+                suffix = ".dump.gz" if traj.name.endswith(".dump.gz") else ".dump"
+                dst = archive / f"{sid}{suffix}"
                 if not dst.exists():
                     shutil.copy2(traj, dst)
                     print(f"[traj] archived {dst.name} "
