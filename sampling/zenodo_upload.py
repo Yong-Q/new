@@ -187,7 +187,10 @@ def pending(root: Path, seen: dict):
         if not p.is_file():
             continue
         key = str(p.relative_to(root))
-        sig = (p.stat().st_size, int(p.stat().st_mtime))
+        size = p.stat().st_size
+        if size == 0:            # Zenodo rejects empty files at commit
+            continue
+        sig = (size, int(p.stat().st_mtime))
         if seen.get(key) != sig:
             yield key, p, sig
 
