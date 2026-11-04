@@ -236,20 +236,39 @@ def main(argv=None):
         state["record_id"] = rec_id
         state_path.write_text(json.dumps(state, indent=2))
 
-    if args.bundle_states:
+    def refresh_bundles():
+        """Bundle each analysed state, rebuilding when the state changed.
+
+        Called every cycle: states finish while this watcher is alive, so a
+        one-shot bundle pass would leave a stale empty archive for any state
+        analysed after startup.
+        """
         import tarfile
         bdir = root / "_bundles"
         bdir.mkdir(exist_ok=True)
         for st in sorted(p for p in root.iterdir() if p.is_dir()):
             if st.name.startswith("_"):
                 continue
+            # Only archive states whose post-processing is complete.
+            if not (st / "analysis.json").exists():
+                continue
             tgt = bdir / f"{st.name}.tar.gz"
-            if not tgt.exists():
-                print(f"[zenodo] bundling {st.name}")
-                with tarfile.open(tgt, "w:gz") as tf:
-                    tf.add(st, arcname=st.name)
+            newest = max((f.stat().st_mtime for f in st.rglob("*")
+                          if f.is_file()), default=0.0)
+            if tgt.exists() and tgt.stat().st_mtime >= newest:
+                continue
+            print(f"[zenodo] bundling {st.name}", flush=True)
+            tmp = Path(str(tgt) + ".tmp")
+            with tarfile.open(tmp, "w:gz") as tf:
+                tf.add(st, arcname=st.name)
+            os.replace(tmp, tgt)
+
+    if args.bundle_states:
+        refresh_bundles()
 
     while True:
+        if args.bundle_states:
+            refresh_bundles()
         seen = state.setdefault("files", {})
         n = 0
         for key, path, sig in pending(root, seen):
