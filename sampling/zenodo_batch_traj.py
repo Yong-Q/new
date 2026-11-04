@@ -23,8 +23,12 @@ from pathlib import Path
 from sampling.zenodo_upload import create_draft, new_version, upload
 
 
-def finished(root: Path, done: dict):
-    """Return [(sim_id, traj)] for finished states not yet uploaded."""
+def finished(root: Path, done: dict, archive_dir=None):
+    """Return [(sim_id, traj)] for finished states not yet uploaded.
+
+    The archive step drops the worker copy as soon as the archived copy is
+    complete, so a failed upload must be retried from ``archive_dir``.
+    """
     metas = list(root.glob("shard_*/attempt-*/samples/*/meta.json"))
     metas += list(root.glob("samples/*/meta.json"))
     out = []
@@ -38,6 +42,10 @@ def finished(root: Path, done: dict):
         traj = state / "run" / "traj.dump.gz"
         if not traj.exists():
             traj = state / "run" / "traj.dump"
+        if not traj.exists() and archive_dir:
+            cand = Path(archive_dir) / f"{sid}.dump.gz"
+            if cand.exists():
+                traj = cand
         if traj.exists():
             out.append((sid, traj))
     return out
@@ -73,7 +81,7 @@ def main(argv=None):
 
     while True:
         try:
-            todo = finished(root, done)
+            todo = finished(root, done, args.archive_dir)
         except Exception as exc:                 # noqa: BLE001
             print(f"[traj] scan error: {type(exc).__name__}: {exc}")
             time.sleep(max(60, args.watch))

@@ -116,12 +116,17 @@ def delete_file(record_id, key):
                     headers=_headers(), timeout=60)
 
 
-def upload(record_id, key, path: Path) -> bool:
-    try:
-        return _upload(record_id, key, path)
-    except Exception as exc:                     # noqa: BLE001
-        print(f"[zenodo] upload error {key}: {type(exc).__name__}: {exc}")
-        return False
+def upload(record_id, key, path: Path, attempts: int = 3) -> bool:
+    """Upload one file, retrying transient network errors with backoff."""
+    for attempt in range(1, attempts + 1):
+        try:
+            return _upload(record_id, key, path)
+        except Exception as exc:                 # noqa: BLE001
+            print(f"[zenodo] upload error {key} (try {attempt}/{attempts}): "
+                  f"{type(exc).__name__}: {exc}", flush=True)
+            if attempt < attempts:
+                time.sleep(15 * attempt)
+    return False
 
 
 def _upload(record_id, key, path: Path) -> bool:
