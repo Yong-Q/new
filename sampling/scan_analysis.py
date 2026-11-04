@@ -46,12 +46,13 @@ RDF_BINS = 100
 # frame access
 # ----------------------------------------------------------------------------
 def iter_frames(path, stride=1):
-    import ase.io
-    for i, atoms in enumerate(ase.io.iread(str(path),
-                                           format="lammps-dump-text",
-                                           specorder=ELEMENTS)):
-        if i % stride == 0:
-            yield atoms
+    # numpy reader: ASE re-scans the gzip stream per frame and is unusably
+    # slow on the multi-hundred-MB production dumps.
+    from ase import Atoms
+    from sampling.dump_mol import read_dump
+    for f in read_dump(path, elements=ELEMENTS, stride=max(1, stride)):
+        yield Atoms(symbols=f["symbols"], positions=f["positions"],
+                    cell=f["cell"], pbc=True)
 
 
 def n_frames_of(state: Path, traj: Path) -> int:
