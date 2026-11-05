@@ -31,3 +31,17 @@ Run command template:
       --outroot <workdir>/samples --run --no-analyze --resume \
       --equil-steps 200000 --steps 2000000 --dump-every 1000 \
       --lmp <lmp> --model <model> --cubin <cubin> --ld-library-path <libs>
+
+## Naming convention
+
+New outputs are named **gas + density + temperature**:
+
+    <gas>_rho<density_molec_A3>_T<T_K>K
+    e.g. NH3_rho0.009947_T618.2K
+
+- `manifest_30_named.csv` — run manifest with this naming and the named data files
+  under `.../maceles_density_scan_exact_named/data/<sim_id>.lammps`.
+- `mapping_names.csv` — old sim_id ↔ new name for the 30 runs and the 7 old
+  done/running states.
+- Archived Zenodo objects keep their original keys; the mapping above links them
+  to the new names without rewriting history.
