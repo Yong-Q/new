@@ -33,6 +33,8 @@ while true; do
         cp "$SCAN_ANA/scan_summary.csv" "$RDIR/" 2>/dev/null
         cp "$SCAN_ANA"/c2_*.npz "$RDIR/" 2>/dev/null
         cp "$SCAN_ANA"/figures/*.png "$RDIR/figures/" 2>/dev/null
+        mkdir -p "$RDIR/state_bundles"
+        cp "$SCAN_ANA"/_bundles/*.tar.gz "$RDIR/state_bundles/" 2>/dev/null
         for d in "$SCAN_ANA"/*/; do
             sid=$(basename "$d")
             [[ "$sid" == _* || "$sid" == figures ]] && continue
