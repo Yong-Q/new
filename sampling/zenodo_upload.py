@@ -196,7 +196,13 @@ def pending(root: Path, seen: dict, skip_state_files: bool = False):
         if size == 0:            # Zenodo rejects empty files at commit
             continue
         sig = (size, int(p.stat().st_mtime))
-        if seen.get(key) != sig:
+        # Bundles are uploaded under states/<sid>.tar.gz but live in
+        # _bundles/ locally; compare against the remote key so completed
+        # bundles are not re-uploaded (and deleted) every cycle.
+        lookup = key
+        if key.startswith("_bundles/"):
+            lookup = "states/" + key[len("_bundles/"):]
+        if seen.get(lookup) != sig:
             yield key, p, sig
 
 
