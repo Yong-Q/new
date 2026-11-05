@@ -1,0 +1,52 @@
+{
+  "sim_id": "C2H6-PRL-T465.4-r07-0.006769",
+  "species": "C2H6",
+  "temperature_K": 465.4,
+  "density_mol_A3": 0.006769,
+  "traj": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/shard_4/attempt-04/samples/C2H6-PRL-T465.4-r07-0.006769/run/traj.dump.gz",
+  "structure": {
+    "n_frames_used": 201,
+    "stride": 10,
+    "n_molecules": 500,
+    "bond_mean_A": 1.6238884401713085,
+    "bond_std_A": 0.5081170507229796,
+    "angle_mean_deg": 111.2662131068271,
+    "angle_std_deg": 5.273985023103966,
+    "p2_mean": 0.33372481146544714,
+    "q_tet_mean": 0.3215598567939738,
+    "q_tet_std": 0.236728345351905,
+    "hb_per_molecule": null,
+    "g_peak": 17.280569704992963,
+    "r_peak_A": 1.56,
+    "r_first_min_A": 1.72,
+    "coordination": 0.4867329687206824,
+    "pair_label": "C-C",
+    "pairs_file": "pairs.npz",
+    "pairs": [
+      "CC",
+      "CH",
+      "HH"
+    ],
+    "anisotropy_l1_max": 0.036183583292652116,
+    "anisotropy_l2_max": 0.9999999999999999,
+    "intra_mean": {
+      "bond_C-C": 1.5347387790679932,
+      "bond_C-H": 1.0947825908660889,
+      "angle_C-C-H": 111.26837158203125,
+      "angle_H-C-H": 107.34754180908203,
+      "dihedral_H-C-C-H": -0.03612365946173668
+    },
+    "axes_p2_mean": 0.0009553122217766941,
+    "intra_frames": 200,
+    "com_frames": 2001,
+    "com_nmol": 500,
+    "msd_file": "com.npz"
+  },
+  "c1c2": {
+    "error": "FileNotFoundError: [Errno 2] No such file or directory: '/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/shard_4/attempt-04/samples/C2H6-PRL-T465.4-r07-0.006769/run/traj.dump.gz'"
+  },
+  "c1c2_dirs": {
+    "f1": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/analysis_scan/C2H6-PRL-T465.4-r07-0.006769/c1c2/f1",
+    "f2": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/analysis_scan/C2H6-PRL-T465.4-r07-0.006769/c1c2/f2"
+  }
+}

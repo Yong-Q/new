@@ -182,11 +182,16 @@ def new_version(record_id):
     return rec
 
 
-def pending(root: Path, seen: dict):
+def pending(root: Path, seen: dict, skip_state_files: bool = False):
     for p in sorted(root.rglob("*")):
         if not p.is_file():
             continue
         key = str(p.relative_to(root))
+        if skip_state_files:
+            first = key.split(os.sep)[0]
+            if first not in ("_bundles", "figures") and (root / first).is_dir():
+                # per-state files are archived in _bundles/<state>.tar.gz
+                continue
         size = p.stat().st_size
         if size == 0:            # Zenodo rejects empty files at commit
             continue
@@ -274,7 +279,7 @@ def main(argv=None):
             refresh_bundles()
         seen = state.setdefault("files", {})
         n = 0
-        for key, path, sig in pending(root, seen):
+        for key, path, sig in pending(root, seen, skip_state_files=args.bundle_states):
             if key.startswith(".zenodo_record"):
                 continue
             if key.startswith("_bundles/"):

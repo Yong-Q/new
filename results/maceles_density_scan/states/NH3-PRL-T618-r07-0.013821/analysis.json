@@ -1,0 +1,65 @@
+{
+  "sim_id": "NH3-PRL-T618-r07-0.013821",
+  "species": "NH3",
+  "temperature_K": 618.0,
+  "density_mol_A3": 0.013821,
+  "traj": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/traj_archive/NH3-PRL-T618-r07-0.013821.dump.gz",
+  "structure": {
+    "n_frames_used": 201,
+    "stride": 10,
+    "n_molecules": 500,
+    "bond_mean_A": 1.0178596904319646,
+    "bond_std_A": 0.03604167526247247,
+    "angle_mean_deg": 107.31273585530678,
+    "angle_std_deg": 7.259288143324791,
+    "p2_mean": 0.333768598835239,
+    "q_tet_mean": 0.3078987476078305,
+    "q_tet_std": 0.23912750492860957,
+    "hb_per_molecule": 0.17568627450980392,
+    "g_peak": 1.852447790923564,
+    "r_peak_A": 3.4,
+    "r_first_min_A": 4.6,
+    "coordination": 5.475595006841821,
+    "pair_label": "N-N",
+    "pairs_file": "pairs.npz",
+    "pairs": [
+      "HH",
+      "HN",
+      "NN"
+    ],
+    "anisotropy_l1_max": 1.0000000000000004,
+    "anisotropy_l2_max": 0.9999999999999998,
+    "intra_mean": {
+      "bond_H-N": 1.01785409450531,
+      "angle_H-N-H": 107.33021545410156
+    },
+    "axes_p2_mean": -0.0013422458432614803,
+    "intra_frames": 200,
+    "com_frames": 2001,
+    "com_nmol": 500,
+    "msd_file": "com.npz"
+  },
+  "c1c2": {
+    "sim_id": "bulk-NH3-r0.013821-618.0K",
+    "species": "NH3",
+    "T_K": 618.0,
+    "density_mol_A3": 0.013821,
+    "n_frames": 201,
+    "bins": 2000,
+    "density_kind": "bulk",
+    "c2_pair": [
+      "N",
+      "N"
+    ],
+    "c2_rmax_A": 8.0,
+    "c2_bins": 80,
+    "rho_pair_A3": 0.013820780590695738,
+    "c2_short_trajectory": false,
+    "source": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/traj_archive/NH3-PRL-T618-r07-0.013821.dump.gz",
+    "source_sha256": "c79f3e0858d16c9f6616aaf9200f00e7fa588de02fbe8c6fc4019c05d1d0860f"
+  },
+  "c1c2_dirs": {
+    "f1": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/analysis_scan/NH3-PRL-T618-r07-0.013821/c1c2/f1",
+    "f2": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/analysis_scan/NH3-PRL-T618-r07-0.013821/c1c2/f2"
+  }
+}
