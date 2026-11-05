@@ -1,0 +1,65 @@
+{
+  "sim_id": "H2O-PRL-T986.4-r00-0.000681",
+  "species": "H2O",
+  "temperature_K": 986.4,
+  "density_mol_A3": 0.000681,
+  "traj": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/traj_archive/H2O-PRL-T986.4-r00-0.000681.dump.gz",
+  "structure": {
+    "n_frames_used": 201,
+    "stride": 10,
+    "n_molecules": 667,
+    "bond_mean_A": 0.9682678196750347,
+    "bond_std_A": 0.039772801788900865,
+    "angle_mean_deg": 104.77652240268186,
+    "angle_std_deg": 8.166516015104566,
+    "p2_mean": 0.33258462576059,
+    "q_tet_mean": 0.0025813206871186803,
+    "q_tet_std": 0.44108797821451906,
+    "hb_per_molecule": 0.007878413734309316,
+    "g_peak": 1.8274002501810078,
+    "r_peak_A": 3.08,
+    "r_first_min_A": 4.28,
+    "coordination": 0.21277449441107038,
+    "pair_label": "O-O",
+    "pairs_file": "pairs.npz",
+    "pairs": [
+      "HH",
+      "HO",
+      "OO"
+    ],
+    "anisotropy_l1_max": 0.9999999999999999,
+    "anisotropy_l2_max": 0.9999999999999999,
+    "intra_mean": {
+      "bond_H-O": 0.9682618379592896,
+      "angle_H-O-H": 104.77446746826172
+    },
+    "axes_p2_mean": 0.0009026362677104771,
+    "intra_frames": 200,
+    "com_frames": 2001,
+    "com_nmol": 667,
+    "msd_file": "com.npz"
+  },
+  "c1c2": {
+    "sim_id": "bulk-H2O-r0.000681-986.4K",
+    "species": "H2O",
+    "T_K": 986.4,
+    "density_mol_A3": 0.000681,
+    "n_frames": 201,
+    "bins": 2000,
+    "density_kind": "bulk",
+    "c2_pair": [
+      "O",
+      "O"
+    ],
+    "c2_rmax_A": 8.0,
+    "c2_bins": 80,
+    "rho_pair_A3": 0.0006810126582273185,
+    "c2_short_trajectory": false,
+    "source": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/traj_archive/H2O-PRL-T986.4-r00-0.000681.dump.gz",
+    "source_sha256": "248bd4dce90afceaf1e5491efe3051b30caf84a914328415fbc266d6a9594d5d"
+  },
+  "c1c2_dirs": {
+    "f1": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/analysis_scan/H2O-PRL-T986.4-r00-0.000681/c1c2/f1",
+    "f2": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/analysis_scan/H2O-PRL-T986.4-r00-0.000681/c1c2/f2"
+  }
+}
