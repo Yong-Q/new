@@ -18,6 +18,19 @@ to 17 real runs on the same hardware:
 which reproduces the measured wall times of H2O r00 (59.3 h), NH3 r05–r09
 (10.5–11.2 h) and C2H6 r05–r08 (15.5–15.8 h).
 
+`N_atoms` and `V` are read from each actual data file, not from an assumed
+molecule count. Two species have a different molecule count from the other
+four and matter for the estimate:
+
+| species | atoms/molecule | molecules | atoms |
+|---|---|---|---|
+| H2O | 3 | 667 | 2001 |
+| NH3 | 4 | 500 | 2000 |
+| CH4 | 5 | 500 | 2500 |
+| C2H4 | 6 | 500 | 3000 |
+| C2H6 | 8 | 500 | 4000 |
+| CO2 | 3 | 667 | 2001 |
+
 Constraints used for the split:
 
 1. no card finishes much earlier than another (time balance);
@@ -34,19 +47,20 @@ The optimum is bounded below by the single slowest case: C2H6 ρ=0.000261
 
 | Group | cases | predicted total | mean density rank | terciles (low/mid/high) |
 |---|---|---|---|---|
-| A | 8 | **148.1 h (6.17 d)** | 14.9 | 2 / 3 / 3 |
-| B | 7 | **167.9 h (7.00 d)** | 16.7 | 2 / 3 / 2 |
-| C | 7 | **149.0 h (6.21 d)** | 15.1 | 3 / 2 / 2 |
-| D | 8 | **150.3 h (6.26 d)** | 15.4 | 3 / 2 / 3 |
+| A | 8 | **152.9 h (6.37 d)** | 14.9 | 2 / 3 / 3 |
+| B | 7 | **179.3 h (7.47 d)** | 16.7 | 2 / 3 / 2 |
+| C | 7 | **171.8 h (7.16 d)** | 15.1 | 3 / 2 / 2 |
+| D | 8 | **168.2 h (7.01 d)** | 15.4 | 3 / 2 / 3 |
 
-Makespan 167.9 h ≈ 7.0 d; spread 19.8 h ≈ 0.8 d. Total ≈ 615 GPU-hours.
+Makespan 179.3 h ≈ 7.5 d; spread 26.4 h ≈ 1.1 d (within the model's own
+~15 % uncertainty). Total ≈ 672 GPU-hours.
 
 ## Group A — includes CO2 ρ=0.001867
 
 | sim_id | density (molec/Å³) | predicted h |
 |---|---|---|
 | NH3_rho0.000522_T618.2K | 0.000522 | 50.4 |
-| CO2_rho0.001867_T463.6K | 0.001867 | 18.6 |
+| CO2_rho0.001867_T463.6K | 0.001867 | 23.4 |
 | NH3_rho0.004292_T618.2K | 0.004292 | 13.7 |
 | C2H4_rho0.004496_T430.4K | 0.004496 | 15.2 |
 | C2H4_rho0.005547_T430.4K | 0.005547 | 14.4 |
@@ -59,22 +73,22 @@ Makespan 167.9 h ≈ 7.0 d; spread 19.8 h ≈ 0.8 d. Total ≈ 615 GPU-hours.
 | sim_id | density (molec/Å³) | predicted h |
 |---|---|---|
 | C2H6_rho0.000261_T465.4K | 0.000261 | 100.4 |
-| CO2_rho0.003330_T463.6K | 0.003330 | 13.9 |
-| CO2_rho0.006254_T463.6K | 0.006254 | 11.3 |
-| CH4_rho0.007364_T290.5K | 0.007364 | 11.4 |
-| CO2_rho0.007717_T463.6K | 0.007717 | 10.8 |
-| CO2_rho0.010642_T463.6K | 0.010642 | 10.1 |
-| CO2_rho0.012104_T463.6K | 0.012104 | 9.9 |
+| CO2_rho0.003330_T463.6K | 0.003330 | 16.9 |
+| CO2_rho0.006254_T463.6K | 0.006254 | 13.3 |
+| CH4_rho0.007364_T290.5K | 0.007364 | 12.8 |
+| CO2_rho0.007717_T463.6K | 0.007717 | 12.6 |
+| CO2_rho0.010642_T463.6K | 0.010642 | 11.7 |
+| CO2_rho0.012104_T463.6K | 0.012104 | 11.5 |
 
 ## Group C — includes CO2 ρ=0.000405
 
 | sim_id | density (molec/Å³) | predicted h |
 |---|---|---|
-| CO2_rho0.000405_T463.6K | 0.000405 | 62.6 |
+| CO2_rho0.000405_T463.6K | 0.000405 | 83.9 |
 | C2H4_rho0.002393_T430.4K | 0.002393 | 19.0 |
 | C2H6_rho0.004036_T465.4K | 0.004036 | 17.1 |
 | C2H6_rho0.004980_T465.4K | 0.004980 | 16.2 |
-| CH4_rho0.005969_T290.5K | 0.005969 | 11.9 |
+| CH4_rho0.005969_T290.5K | 0.005969 | 13.4 |
 | H2O_rho0.012982_T986.4K | 0.012982 | 11.3 |
 | H2O_rho0.017902_T986.4K | 0.017902 | 10.9 |
 
@@ -82,14 +96,14 @@ Makespan 167.9 h ≈ 7.0 d; spread 19.8 h ≈ 0.8 d. Total ≈ 615 GPU-hours.
 
 | sim_id | density (molec/Å³) | predicted h |
 |---|---|---|
-| CH4_rho0.000386_T290.5K | 0.000386 | 54.1 |
+| CH4_rho0.000386_T290.5K | 0.000386 | 67.4 |
 | C2H6_rho0.002149_T465.4K | 0.002149 | 21.3 |
-| CH4_rho0.003177_T290.5K | 0.003177 | 14.0 |
+| CH4_rho0.003177_T290.5K | 0.003177 | 16.2 |
 | H2O_rho0.005601_T986.4K | 0.005601 | 13.8 |
 | C2H4_rho0.007649_T430.4K | 0.007649 | 13.5 |
-| CH4_rho0.010155_T290.5K | 0.010155 | 10.9 |
+| CH4_rho0.010155_T290.5K | 0.010155 | 12.2 |
 | H2O_rho0.010522_T986.4K | 0.010522 | 11.8 |
-| CH4_rho0.011551_T290.5K | 0.011551 | 10.8 |
+| CH4_rho0.011551_T290.5K | 0.011551 | 12.0 |
 
 ## Execution notes
 
