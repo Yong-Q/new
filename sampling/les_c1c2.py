@@ -212,6 +212,68 @@ def _chunk_runs(total, chunk, prefix, start=0):
     return "\n".join(lines)
 
 
+def truncate_to_last_complete_frame(path) -> int:
+    """Drop a trailing partial dump frame left behind by a killed run.
+
+    A resumed LAMMPS dump uses ``dump_modify ... append yes``; if the old file
+    ends mid-frame the appended frames would sit behind a truncated atom block
+    and every downstream parser would see a corrupt seam.  Truncate the file to
+    the end of the last complete frame before the restart.  Returns the number
+    of bytes removed (0 when the file is absent or already clean).
+    """
+    path = Path(path)
+    if not path.exists() or path.stat().st_size == 0:
+        return 0
+    size = path.stat().st_size
+    marker = b"ITEM: TIMESTEP"
+    tail = 64 << 20                      # a 4000-atom frame is ~0.4 MB
+    base = max(0, size - tail)
+    with open(path, "rb") as fh:
+        fh.seek(base)
+        blob = fh.read()
+    offs = [base + m.start() for m in re.finditer(re.escape(marker), blob)]
+    if not offs:
+        return 0
+
+    def frame_end(off):
+        """Return the byte offset just past the frame, or None if truncated."""
+        with open(path, "rb") as fh:
+            fh.seek(off)
+            if fh.readline().strip() != marker:
+                return None
+            if not fh.readline().split():
+                return None
+            if fh.readline().strip() != b"ITEM: NUMBER OF ATOMS":
+                return None
+            try:
+                n = int(fh.readline().split()[0])
+            except (IndexError, ValueError):
+                return None
+            if not fh.readline().startswith(b"ITEM: BOX BOUNDS"):
+                return None
+            for _ in range(3):
+                if not fh.readline().split():
+                    return None
+            ahdr = fh.readline().split()
+            if len(ahdr) < 3 or ahdr[0] != b"ITEM:" or ahdr[1] != b"ATOMS":
+                return None
+            ncols = len(ahdr) - 2
+            for _ in range(n):
+                if len(fh.readline().split()) != ncols:
+                    return None
+            return fh.tell()
+
+    for off in reversed(offs[-3:]):
+        end = frame_end(off)
+        if end is not None:
+            if end < size:
+                with open(path, "r+b") as fh:
+                    fh.truncate(end)
+                return size - end
+            return 0
+    return 0
+
+
 def write_lammps_input(workdir, data, model, cubin, elements, temperature,
                        timestep, steps, dump_every, equil_steps=0,
                        seed=12345, restart_every=50000) -> Path:
@@ -425,6 +487,13 @@ def run_md(data, species, elements, temperature, timestep, steps, dump_every,
         parsed = parse_log_timing(log_path, steps=None)
     else:
         if restart:
+            if phase == "prod":
+                # Remove a mid-frame tail from the killed run so that the
+                # append-mode dump resumes on a clean frame boundary.
+                cut = truncate_to_last_complete_frame(workdir / "traj.dump")
+                if cut:
+                    print(f"[les] truncated {cut} bytes of a partial dump "
+                          f"frame before resuming {workdir.name}")
             input_path = write_lammps_restart_input(
                 workdir, restart, temperature, timestep, steps, dump_every,
                 equil_steps, phase, start_step,
