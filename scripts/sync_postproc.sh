@@ -43,6 +43,30 @@ while true; do
             cp "$d/analysis.json" "$RDIR/states/$sid/" 2>/dev/null
         done
     fi
+
+    # Exact-EOS complement campaign results + live group manifests.
+    CAMPAIGN=${CAMPAIGN:-/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/exact_campaign}
+    EXACT_ANA=${EXACT_ANA:-$CAMPAIGN/analysis_scan}
+    if [[ -d "$EXACT_ANA" ]]; then
+        EDIR="$WORK/results/maceles_density_scan_exact"
+        mkdir -p "$EDIR/figures" "$EDIR/states" "$EDIR/state_bundles"
+        cp "$EXACT_ANA/scan_summary.csv" "$EDIR/" 2>/dev/null
+        cp "$EXACT_ANA"/c2_*.npz "$EDIR/" 2>/dev/null
+        cp "$EXACT_ANA"/figures/*.png "$EDIR/figures/" 2>/dev/null
+        cp "$EXACT_ANA"/_bundles/*.tar.gz "$EDIR/state_bundles/" 2>/dev/null
+        for d in "$EXACT_ANA"/*/; do
+            sid=$(basename "$d")
+            [[ "$sid" == _* || "$sid" == figures ]] && continue
+            [[ -f "$d/analysis.json" ]] || continue
+            mkdir -p "$EDIR/states/$sid"
+            cp "$d/analysis.json" "$EDIR/states/$sid/" 2>/dev/null
+        done
+    fi
+    for g in A B C D; do
+        cp "$CAMPAIGN/group_${g}_v2/attempt-01/manifest.csv" \
+            "$WORK/cases/complement_30/manifest_group_${g}_v2.csv" 2>/dev/null
+    done
+
     cd "$WORK" || exit 1
     if [[ -n "$(git status --porcelain)" ]]; then
         git add -A
