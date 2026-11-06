@@ -419,6 +419,7 @@ def run_md(data, species, elements, temperature, timestep, steps, dump_every,
         start_step, restart = equil_restart
         phase = "equil"
     log_path = workdir / "log.les_md"
+    input_path = workdir / "in.les_md"
     if restart and phase == "prod" and start_step >= steps:
         invocation = {}
         parsed = parse_log_timing(log_path, steps=None)
