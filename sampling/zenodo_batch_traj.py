@@ -31,6 +31,8 @@ def finished(root: Path, done: dict, archive_dir=None):
     """
     metas = list(root.glob("shard_*/attempt-*/samples/*/meta.json"))
     metas += list(root.glob("samples/*/meta.json"))
+    # exact_campaign layout: <root>/group_X_v2/attempt-01/samples/<sim_id>/meta.json
+    metas += list(root.glob("*/attempt-*/samples/*/meta.json"))
     out = []
     for meta in sorted(metas):
         state = meta.parent

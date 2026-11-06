@@ -55,5 +55,21 @@ supervise traj "$PY" -m sampling.zenodo_batch_traj \
     --root "$SCAN_ROOT" --record-id "$TRAJ_RECORD" --batch 3 --watch "$WATCH" \
     --archive-dir "$SCAN_ROOT/traj_archive" &
 supervise bundles "$HERE/upload_bundles.sh" &
+
+# ---- exact-EOS complement campaign (exact_campaign/group_*_v2/attempt-01) ----
+EXACT_ROOT=${EXACT_ROOT:-$BZA/symmetrix-polar/bench/maceles_density_scan/exact_campaign}
+EXACT_ANA=${EXACT_ANA:-$EXACT_ROOT/analysis_scan}
+mkdir -p "$EXACT_ANA"
+supervise watch_exact "$PY" -m sampling.scan_watch \
+    --root "$EXACT_ROOT" --out "$EXACT_ANA" --interval "$SCAN_INTERVAL" --keep-traj &
+supervise mirror_exact "$PY" -m sampling.zenodo_upload \
+    --root "$EXACT_ANA" --kind analysis --record-id "$ANA_RECORD" \
+    --bundle-states --no-bundles --bundles-figures-only --watch "$WATCH" &
+supervise traj_exact "$PY" -m sampling.zenodo_batch_traj \
+    --root "$EXACT_ROOT" --record-id "$TRAJ_RECORD" --batch 3 --watch "$WATCH" \
+    --archive-dir "$EXACT_ROOT/traj_archive" &
+supervise bundles_exact env SCAN_ROOT="$EXACT_ROOT" ANA="$EXACT_ANA" \
+    "$HERE/upload_bundles.sh" &
+
 supervise sync "$HERE/sync_postproc.sh" "$SYNC_INTERVAL" &
 wait

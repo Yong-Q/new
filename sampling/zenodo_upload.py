@@ -182,11 +182,16 @@ def new_version(record_id):
     return rec
 
 
-def pending(root: Path, seen: dict, skip_state_files: bool = False):
+def pending(root: Path, seen: dict, skip_state_files: bool = False,
+            bundles_figures_only: bool = False):
     for p in sorted(root.rglob("*")):
         if not p.is_file():
             continue
         key = str(p.relative_to(root))
+        if bundles_figures_only:
+            first = key.split(os.sep)[0]
+            if first not in ("_bundles", "figures") and key != "scan_summary.csv":
+                continue
         if skip_state_files:
             first = key.split(os.sep)[0]
             if first not in ("_bundles", "figures") and (root / first).is_dir():
@@ -219,6 +224,9 @@ def main(argv=None):
                     help="create state bundles but do not upload them")
     ap.add_argument("--bundle-states", action="store_true",
                     help="tar each <root>/<state>/ into _bundles/<state>.tar.gz")
+    ap.add_argument("--bundles-figures-only", action="store_true",
+                    help="mirror only _bundles/, figures/ and scan_summary.csv "
+                         "(used by the exact-campaign loop to avoid churning logs)")
     ap.add_argument("--single-file", help="upload one file (with --key)")
     ap.add_argument("--key", help="remote key for --single-file")
     ap.add_argument("--delete-after", action="store_true")
@@ -313,7 +321,9 @@ def main(argv=None):
             reconcile_bundle_seen()
         seen = state.setdefault("files", {})
         n = 0
-        for key, path, sig in pending(root, seen, skip_state_files=args.bundle_states):
+        for key, path, sig in pending(
+                root, seen, skip_state_files=args.bundle_states,
+                bundles_figures_only=args.bundles_figures_only):
             if key.startswith(".zenodo_record"):
                 continue
             if args.no_bundles and key.startswith("_bundles/"):
