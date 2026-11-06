@@ -25,6 +25,7 @@ PROD_STEPS = 2_000_000
 
 
 def shard_state(shard: Path):
+    # ``group_X_v2`` dirs in the exact campaign have the same layout as shards.
     runs = sorted(shard.glob("attempt-*/samples/*/run"))
     if not runs:
         return None
@@ -64,10 +65,10 @@ def loops_alive():
                ("scan_watch", "zenodo_upload", "zenodo_batch_traj"))
 
 
-def report(root: Path) -> str:
+def report(root: Path, expected: int = 60) -> str:
     lines = [f"== {time.strftime('%Y-%m-%d %H:%M:%S')} =="]
     total_done = 0
-    for shard in sorted(root.glob("shard_*")):
+    for shard in sorted(list(root.glob("shard_*")) + list(root.glob("group_*"))):
         st = shard_state(shard)
         if not st:
             continue
@@ -80,7 +81,9 @@ def report(root: Path) -> str:
                      f"traj={st['traj_mb']:6.1f} MB  "
                      f"{'DONE' if st['done'] else ''}")
     done = 0
-    for _m in root.glob("shard_*/attempt-*/samples/*/meta.json"):
+    metas = set(root.glob("shard_*/attempt-*/samples/*/meta.json"))
+    metas |= set(root.glob("*/attempt-*/samples/*/meta.json"))
+    for _m in sorted(metas):
         try:
             import json as _json2
             if _json2.loads(_m.read_text()).get("status") == "skipped_not_run":
@@ -89,6 +92,7 @@ def report(root: Path) -> str:
             pass
         done += 1
     traj = list(root.glob("shard_*/attempt-*/samples/*/run/traj.dump*"))
+    traj += list(root.glob("*/attempt-*/samples/*/run/traj.dump*"))
     traj += list(root.glob("traj_archive/*"))
     size = sum(p.stat().st_size for p in traj if p.is_file())
     free = shutil.disk_usage(root).free
@@ -100,9 +104,9 @@ def report(root: Path) -> str:
             zen = f"  zenodo_traj={len(d.get('done', {}))}"
         except Exception:
             pass
-    lines.append(f"  finished states: {done}/60   trajectories on disk: "
+    lines.append(f"  finished states: {done}/{expected}   trajectories on disk: "
                  f"{len(traj)} ({size/1e9:.1f} GB)   free: {free/1e9:.0f} GB{zen}")
-    lines.append(f"  post-processing loops alive: {loops_alive()}/3")
+    lines.append(f"  post-processing loops alive: {loops_alive()}")
     return "\n".join(lines)
 
 
@@ -111,12 +115,14 @@ def main(argv=None):
     ap.add_argument("--root", required=True)
     ap.add_argument("--watch", type=float, default=0)
     ap.add_argument("--log", default=None)
+    ap.add_argument("--expected", type=int, default=60,
+                    help="number of states in this campaign (for the header)")
     args = ap.parse_args(argv)
     root = Path(args.root)
     log = Path(args.log) if args.log else root / "analysis_scan" / "status.log"
     log.parent.mkdir(parents=True, exist_ok=True)
     while True:
-        block = report(root)
+        block = report(root, expected=args.expected)
         print(block, flush=True)
         with open(log, "a") as fh:
             fh.write(block + "\n")

@@ -12,7 +12,7 @@ REPO=$(cd -- "$HERE/.." && pwd -P)
 SRC=${SRC:-$REPO/sampling}
 WORK=${WORK:-/workspace/group/shared/bza/postproc_repo}
 INTERVAL=${1:-1800}
-FILES="scan_analysis pair_correlations intramolecular scan_watch zenodo_upload zenodo_batch_traj cdft_dataset analyze_traj_orientation trajectory direct_correlation les_c1c2 les_batch __init__"
+FILES="scan_analysis pair_correlations intramolecular scan_watch scan_status zenodo_upload zenodo_batch_traj cdft_dataset analyze_traj_orientation trajectory direct_correlation les_c1c2 les_batch __init__"
 
 export GIT_SSH_COMMAND="ssh -i /workspace/group/shared/.ssh/matos_github_ed25519 -o IdentitiesOnly=yes -o UserKnownHostsFile=/workspace/group/shared/.ssh/known_hosts -o StrictHostKeyChecking=yes -o BatchMode=yes"
 
@@ -23,6 +23,9 @@ fi
 while true; do
     for f in $FILES; do cp "$SRC/$f.py" "$WORK/sampling/" 2>/dev/null; done
     cp "$REPO/scripts/zenodo_loops.sh" "$WORK/scripts/" 2>/dev/null
+    cp "$REPO/scripts/zenodo_loops_exact.sh" "$WORK/scripts/" 2>/dev/null
+    cp "$REPO/scripts/upload_bundles.sh" "$WORK/scripts/" 2>/dev/null
+    cp "$REPO/scripts/sync_postproc.sh" "$WORK/scripts/" 2>/dev/null
     cp "$REPO/requirements.txt" "$WORK/" 2>/dev/null
 
     # Lightweight post-processing results -> GitHub double backup.
