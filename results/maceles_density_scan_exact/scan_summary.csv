@@ -1,0 +1,2 @@
+sim_id,species,temperature_K,density_mol_A3,n_frames_used,bond_mean_A,angle_mean_deg,q_tet_mean,hb_per_molecule,p2_mean,r_peak_A,g_peak,r_first_min_A,coordination
+NH3_rho0.000522_T618.2K,NH3,618.231707,0.000522021,201,1.0168457397580377,107.75408705841245,0.003464140922327037,0.00415686274509804,0.3353977446266081,3.48,2.011962726477507,4.76,0.24448009987348845
