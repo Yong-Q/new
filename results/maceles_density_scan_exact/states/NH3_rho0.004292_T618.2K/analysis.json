@@ -1,0 +1,65 @@
+{
+  "sim_id": "NH3_rho0.004292_T618.2K",
+  "species": "NH3",
+  "temperature_K": 618.231707,
+  "density_mol_A3": 0.004292169,
+  "traj": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/exact_campaign/traj_archive/NH3_rho0.004292_T618.2K.dump.gz",
+  "structure": {
+    "n_frames_used": 201,
+    "stride": 10,
+    "n_molecules": 500,
+    "bond_mean_A": 1.0172576354316423,
+    "bond_std_A": 0.03609821164373989,
+    "angle_mean_deg": 107.62571690953152,
+    "angle_std_deg": 7.261392839596544,
+    "p2_mean": 0.33286030111791665,
+    "q_tet_mean": 0.11516781346824576,
+    "q_tet_std": 0.35892696618630604,
+    "hb_per_molecule": 0.04290196078431372,
+    "g_peak": 1.7713225698001078,
+    "r_peak_A": 3.48,
+    "r_first_min_A": 5.08,
+    "coordination": 2.377721829499987,
+    "pair_label": "N-N",
+    "pairs_file": "pairs.npz",
+    "pairs": [
+      "HH",
+      "HN",
+      "NN"
+    ],
+    "anisotropy_l1_max": 0.6354632008938221,
+    "anisotropy_l2_max": 0.7958211566587601,
+    "intra_mean": {
+      "bond_H-N": 1.0172526836395264,
+      "angle_H-N-H": 107.63175964355469
+    },
+    "axes_p2_mean": 0.002410555724054575,
+    "intra_frames": 200,
+    "com_frames": 2001,
+    "com_nmol": 500,
+    "msd_file": "com.npz"
+  },
+  "c1c2": {
+    "sim_id": "bulk-NH3-r0.00429217-618.231707K",
+    "species": "NH3",
+    "T_K": 618.231707,
+    "density_mol_A3": 0.004292169,
+    "n_frames": 201,
+    "bins": 2000,
+    "density_kind": "bulk",
+    "c2_pair": [
+      "N",
+      "N"
+    ],
+    "c2_rmax_A": 8.0,
+    "c2_bins": 80,
+    "rho_pair_A3": 0.004292168599735968,
+    "c2_short_trajectory": false,
+    "source": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/exact_campaign/traj_archive/NH3_rho0.004292_T618.2K.dump.gz",
+    "source_sha256": "30c76826788c7a87355c35642fa55ad37c4edd7ee94a70d47e6892f729538446"
+  },
+  "c1c2_dirs": {
+    "f1": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/exact_campaign/analysis_scan/NH3_rho0.004292_T618.2K/c1c2/f1",
+    "f2": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/exact_campaign/analysis_scan/NH3_rho0.004292_T618.2K/c1c2/f2"
+  }
+}
