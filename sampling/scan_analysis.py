@@ -415,6 +415,13 @@ def discover_states(root: Path):
     for traj in sorted(root.rglob("run/traj.dump*")):
         if "samples_old" in str(traj) or "_legacy" in str(traj):
             continue
+        # The old scan root contains exact_campaign/ as a subtree; that
+        # campaign has its own watcher and analysis directory.  Skipping it
+        # here prevents duplicate analysis and duplicate Zenodo bundle keys.
+        rel = traj.relative_to(root)
+        if rel.parts and rel.parts[0] == "exact_campaign" \
+                and root.name != "exact_campaign":
+            continue
         entries.append((traj.parent.parent, traj))
     if archive.is_dir():
         for f in sorted(archive.glob("*.dump.gz")):
