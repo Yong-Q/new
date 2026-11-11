@@ -179,19 +179,37 @@ postprocess_shard.py --manifest <shard> --traj-root scan/traj --post-root scan/p
 
 ---
 
-## 8. 文件清单
+## 8. 与仓库 sampling/ 版本的差异（重要）
+
+仓库根目录 `sampling/` 里的脚本是**另一条支线**（GPU 为主），和本机 CPU 直接模式用的版本不同：
+
+| | 本机 CPU 版（11-04） | 仓库 sampling/ 版 |
+|---|---|---|
+| `les_batch.py` | 有 `--np-ranks` / `--host-artifact` / `--mpirun` | 无这些参数（`--gpus` 默认 1） |
+| `les_c1c2.py: run_md()` | 参数含 `np_ranks/mpirun/host_artifact` | 改为 `restart_every`，不含 MPI 参数 |
+| 检查点 / 断点续跑 | **无**（只写 `restart_100ps`、`restart_1ns`） | **有**：`_chunk_runs()` 每 50000 步写 `prod_<step>.restart`，`write_lammps_restart_input()` 续跑，`--resume` 检测到 restart 就接着跑 |
+
+结论：
+
+- **两者不能直接互换**，仓库版没有 CPU 多进程（`mpirun -np` + `jit_host_artifact`）这条路径；
+- 想要"中断可续"，必须把仓库版的 `_chunk_runs` / `write_lammps_restart_input` / `--resume` 检测
+  **反向移植**到本机 CPU 版，而不是整个覆盖；
+- `analyze_trajectory` / `parse_elements` / `parse_pair` 两个版本签名一致，
+  所以 `postprocess_shard.py` 在两种版本下都能用。
+
+> 教训：本机这套没有检查点，被配额杀掉的 3 个作业（进度 48% / 76% / 31%）只能从头重跑。
+
+## 9. 文件清单
 
 ```
 density_scan_cpu/
 ├── README.md                      本文件
 ├── scripts/
-│   ├── les_batch.py               MD 驱动（按 manifest 逐状态跑，支持 --resume/--no-analyze）
-│   ├── les_c1c2.py                LAMMPS 调用 + 轨迹分析（run_md / analyze_trajectory）
-│   ├── postprocess_shard.py       按 shard 出 F1/F2
+│   ├── postprocess_shard.py       按 shard 出 F1/F2（本机专用）
 │   ├── build_scan.py              生成 60 状态网格 / 数据文件 / manifest
-│   ├── make_shards.py             拆 shard
-│   ├── scan_status.py             运行状态汇总
-│   └── scan_watch.py              完成状态监视
+│   └── make_shards.py             拆 shard
+│   （les_batch.py / les_c1c2.py / scan_status.py / scan_watch.py 不在本目录，
+│     直接用仓库根目录的 sampling/ 版本，避免两份分叉）
 ├── templates/
 │   ├── in.les_md.template         单个状态的 LAMMPS 输入
 │   ├── run_main.sbatch            主扫描作业模板（32/48 核，60 天）
