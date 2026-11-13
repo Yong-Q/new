@@ -381,9 +381,18 @@ dump_modify 1 sort id
 
 def write_lammps_restart_input(workdir, restart, temperature, timestep,
                                steps, dump_every, equil_steps, phase,
-                               start_step, restart_every=50000) -> Path:
+                               start_step, restart_every=50000,
+                               model=None, cubin=None, elements=None) -> Path:
     """Write a continuation input that reads a step-tagged restart file."""
     workdir = Path(workdir)
+    pair_block = ""
+    if model is not None and cubin is not None and elements:
+        # This pair style is not restartable: LAMMPS requires both commands
+        # again after read_restart.
+        pair_block = (
+            f"pair_style {PAIR_STYLE.format(cubin=Path(cubin).resolve())}\n"
+            f"pair_coeff * * {Path(model).resolve()} "
+            f"{' '.join(elements)}\n")
     lines = [f"""units metal
 atom_style molecular/kk
 atom_modify map yes
@@ -391,7 +400,7 @@ boundary p p p
 package kokkos neigh half newton on
 newton on
 read_restart {Path(restart).name}
-neighbor 2.0 bin
+{pair_block}neighbor 2.0 bin
 neigh_modify every 10 delay 0 check yes
 timestep {timestep:g}
 thermo {dump_every}
@@ -551,7 +560,8 @@ def run_md(data, species, elements, temperature, timestep, steps, dump_every,
             input_path = write_lammps_restart_input(
                 workdir, restart, temperature, timestep, steps, dump_every,
                 equil_steps, phase, start_step,
-                restart_every=restart_every)
+                restart_every=restart_every,
+                model=model, cubin=cubin, elements=elements)
         else:
             input_path = write_lammps_input(
                 workdir, data, model, cubin, elements, temperature, timestep,
