@@ -212,6 +212,56 @@ def _chunk_runs(total, chunk, prefix, start=0):
     return "\n".join(lines)
 
 
+def truncate_dump_before_step(path, step) -> int:
+    """Cut a dump at the first frame with timestep >= ``step``.
+
+    Production is checkpointed every ``restart_every`` steps, but dumps are
+    written more often.  A run killed between checkpoints leaves frames newer
+    than the last restart in the file; resuming from that restart with
+    ``dump_modify append yes`` would duplicate them.  Truncate to the restart
+    step first.  Returns the number of bytes removed.
+    """
+    path = Path(path)
+    if not path.exists() or path.stat().st_size == 0:
+        return 0
+    marker = b"ITEM: TIMESTEP"
+    size = path.stat().st_size
+    cut = None
+    with open(path, "rb") as fh:
+        pos = 0
+        tail = b""
+        while cut is None:
+            chunk = fh.read(1 << 24)
+            if not chunk:
+                break
+            buf = tail + chunk
+            base = pos - len(tail)
+            start = 0
+            while True:
+                i = buf.find(marker, start)
+                if i < 0:
+                    break
+                nl = buf.find(b"\n", i + len(marker))
+                nl2 = buf.find(b"\n", nl + 1) if nl >= 0 else -1
+                if nl2 >= 0:
+                    try:
+                        ts = int(buf[nl + 1:nl2].split()[0])
+                    except (IndexError, ValueError):
+                        ts = None
+                    if ts is not None and ts >= step:
+                        cut = base + i
+                        break
+                start = i + 1
+            tail = buf[-64:]
+            pos += len(chunk)
+    if cut is None:
+        return 0
+    removed = size - cut
+    with open(path, "r+b") as fh:
+        fh.truncate(cut)
+    return removed
+
+
 def truncate_to_last_complete_frame(path) -> int:
     """Drop a trailing partial dump frame left behind by a killed run.
 
@@ -488,12 +538,16 @@ def run_md(data, species, elements, temperature, timestep, steps, dump_every,
     else:
         if restart:
             if phase == "prod":
-                # Remove a mid-frame tail from the killed run so that the
-                # append-mode dump resumes on a clean frame boundary.
-                cut = truncate_to_last_complete_frame(workdir / "traj.dump")
+                # Drop frames newer than the restart checkpoint (they will be
+                # re-written) and any partial tail, so the append-mode dump
+                # resumes on a clean, duplicate-free frame boundary.
+                dump_path = workdir / "traj.dump"
+                cut = truncate_dump_before_step(dump_path, start_step)
+                if not cut:
+                    cut = truncate_to_last_complete_frame(dump_path)
                 if cut:
-                    print(f"[les] truncated {cut} bytes of a partial dump "
-                          f"frame before resuming {workdir.name}")
+                    print(f"[les] truncated {cut} bytes of dump before resuming "
+                          f"{workdir.name} at step {start_step}")
             input_path = write_lammps_restart_input(
                 workdir, restart, temperature, timestep, steps, dump_every,
                 equil_steps, phase, start_step,
