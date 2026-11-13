@@ -400,7 +400,8 @@ boundary p p p
 package kokkos neigh half newton on
 newton on
 read_restart {Path(restart).name}
-{pair_block}neighbor 2.0 bin
+{pair_block}fix 1 all nvt temp {temperature:g} {temperature:g} 0.1
+neighbor 2.0 bin
 neigh_modify every 10 delay 0 check yes
 timestep {timestep:g}
 thermo {dump_every}
