@@ -324,9 +324,62 @@ def truncate_to_last_complete_frame(path) -> int:
     return 0
 
 
+def _field_block(field, temperature, Lz):
+    """LAMMPS commands for a PRL-style external potential V_ext(z).
+
+    ``field`` is a dict::
+
+        {"well": {"s": 2.0, "w": 0.6, "p": 4.0},
+         "gaussians": [{"h": 1.0, "mu_frac": 0.3, "sigma_frac": 0.05}, ...]}
+
+    ``s`` and ``h`` are in units of kT; ``mu_frac``/``sigma_frac`` are fractions
+    of the box length.  The well is centred on the box and depends on |z|; its
+    force is the analytic derivative, applied with an atom-style variable.
+    """
+    if not field:
+        return ""
+    import math
+    kT = 8.617333262e-5 * float(temperature)  # eV
+    L = float(Lz)
+    zc = L / 2.0
+    lines = [f"variable zc atom \"z-{zc:.8g}\"",
+             "variable za atom \"abs(v_zc)\""]
+    well = field.get("well")
+    if well:
+        s = float(well["s"]) * kT
+        w = float(well["w"])
+        p = float(well["p"])
+        half = w * L / 2.0
+        scale = (1.0 - w) * L / 2.0
+        lines.append(f"variable u atom \"(v_za-{half:.8g})/{scale:.8g}\"")
+        # LAMMPS atom-style variables have no step()/if(); build the sign and
+        # the inside-window mask from clamp() and ramp().
+        lines.append("variable sgn atom \"clamp(1e6*v_zc,-1,1)\"")
+        lines.append("variable m1 atom \"ramp(v_u,1e-6)\"")
+        lines.append("variable m2 atom \"1.0-ramp(v_u-1.0,1e-6)\"")
+        lines.append(
+            f"variable fw atom \"-{s*p/scale:.8g}*v_sgn"
+            f"*clamp(v_u,0,1)^{p-1:g}*v_m1*v_m2\"")
+    else:
+        lines.append("variable fw atom \"0.0\"")
+    terms = []
+    for g in field.get("gaussians") or []:
+        h = float(g["h"]) * kT
+        mu = float(g["mu_frac"]) * L
+        sig = max(float(g["sigma_frac"]) * L, 1e-6)
+        terms.append(
+            f"{h:.8g}*(z-{mu:.8g})/{sig*sig:.8g}"
+            f"*exp(-((z-{mu:.8g})^2)/(2*{sig*sig:.8g}))")
+    lines.append("variable fg atom \"" + ("+".join(terms) if terms else "0.0") + "\"")
+    lines.append("variable fz atom \"v_fw+v_fg\"")
+    lines.append("fix ext all addforce 0.0 0.0 v_fz")
+    return "\n".join(lines)
+
+
 def write_lammps_input(workdir, data, model, cubin, elements, temperature,
                        timestep, steps, dump_every, equil_steps=0,
-                       seed=12345, restart_every=50000) -> Path:
+                       seed=12345, restart_every=50000, field=None,
+                       Lz=None) -> Path:
     """Write the LES NVT input file and return its path.
 
     Equilibration and production are split into chunks with step-tagged
@@ -336,6 +389,9 @@ def write_lammps_input(workdir, data, model, cubin, elements, temperature,
     workdir = Path(workdir)
     workdir.mkdir(parents=True, exist_ok=True)
     t_start = min(300.0, float(temperature))
+    if field and not Lz:
+        raise ValueError("field requires the box length Lz")
+    field_block = _field_block(field, temperature, Lz)
     if equil_steps and equil_steps > 0:
         # Ramp from a gentle start temperature to the target over the first
         # 20 % of the equilibration, then hold.  A cold start plus a staged
@@ -366,6 +422,7 @@ neighbor 2.0 bin
 neigh_modify every 10 delay 0 check yes
 timestep {timestep:g}
 velocity all create {t_start:g} {seed} mom yes rot no dist gaussian
+{field_block}
 thermo {dump_every}
 thermo_style custom step temp pe
 run_style verlet/kk
@@ -382,7 +439,8 @@ dump_modify 1 sort id
 def write_lammps_restart_input(workdir, restart, temperature, timestep,
                                steps, dump_every, equil_steps, phase,
                                start_step, restart_every=50000,
-                               model=None, cubin=None, elements=None) -> Path:
+                               model=None, cubin=None, elements=None,
+                               field=None, Lz=None) -> Path:
     """Write a continuation input that reads a step-tagged restart file."""
     workdir = Path(workdir)
     pair_block = ""
@@ -393,6 +451,9 @@ def write_lammps_restart_input(workdir, restart, temperature, timestep,
             f"pair_style {PAIR_STYLE.format(cubin=Path(cubin).resolve())}\n"
             f"pair_coeff * * {Path(model).resolve()} "
             f"{' '.join(elements)}\n")
+    field_block = _field_block(field, temperature, Lz) if field else ""
+    if field_block:
+        field_block += "\n"
     lines = [f"""units metal
 atom_style molecular/kk
 atom_modify map yes
@@ -401,7 +462,7 @@ package kokkos neigh half newton on
 newton on
 read_restart {Path(restart).name}
 {pair_block}fix 1 all nvt temp {temperature:g} {temperature:g} 0.1
-neighbor 2.0 bin
+{field_block}neighbor 2.0 bin
 neigh_modify every 10 delay 0 check yes
 timestep {timestep:g}
 thermo {dump_every}
@@ -501,7 +562,7 @@ def run_md(data, species, elements, temperature, timestep, steps, dump_every,
            model=DEFAULT_MODEL, cubin=DEFAULT_CUBIN,
            lmp=DEFAULT_LMP, density=None, gpus=1, omp_threads=1,
            ld_library_path=DEFAULT_LD_LIBRARY_PATH,
-           restart_every=50000) -> dict:
+           restart_every=50000, field=None) -> dict:
     """Write input, run LES-MD, and return run metadata plus the dump path."""
     data = Path(data)
     workdir = Path(workdir)
@@ -562,12 +623,14 @@ def run_md(data, species, elements, temperature, timestep, steps, dump_every,
                 workdir, restart, temperature, timestep, steps, dump_every,
                 equil_steps, phase, start_step,
                 restart_every=restart_every,
-                model=model, cubin=cubin, elements=elements)
+                model=model, cubin=cubin, elements=elements,
+                field=field, Lz=info["lengths_A"]["z"])
         else:
             input_path = write_lammps_input(
                 workdir, data, model, cubin, elements, temperature, timestep,
                 steps, dump_every, equil_steps=equil_steps, seed=seed,
-                restart_every=restart_every)
+                restart_every=restart_every, field=field,
+                Lz=info["lengths_A"]["z"])
         invocation = run_engine(lmp, workdir, input_path, log_path, gpus=gpus,
                                 omp_threads=omp_threads,
                                 ld_library_path=ld_library_path)

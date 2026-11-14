@@ -144,6 +144,10 @@ def run_row(row: dict, args, outroot: Path) -> dict:
     sim_id = row["sim_id"].strip() or (
         f"{species}-r{density if density is not None else 'auto'}-"
         f"{temperature:g}K-s{seed}")
+    field = None
+    field_json = (row.get("field_json") or "").strip()
+    if field_json:
+        field = json.loads(Path(field_json).read_text())
     root = outroot / sim_id
     done = (root / "les_c1c2.json").exists()
     md_done = (root / "meta.json").exists() and not done
@@ -186,6 +190,9 @@ def run_row(row: dict, args, outroot: Path) -> dict:
         "cubin": str(Path(args.cubin).resolve()),
         "cubin_sha256": sha256(args.cubin),
     }
+    if field is not None:
+        meta["field"] = field
+        (root / "field.json").write_text(json.dumps(field, indent=2))
     if args.run:
         if not row["data"].strip():
             raise SystemExit(f"row {sim_id}: --run requires data")
@@ -197,7 +204,7 @@ def run_row(row: dict, args, outroot: Path) -> dict:
             model=args.model, cubin=args.cubin, lmp=args.lmp,
             density=density, gpus=args.gpus, omp_threads=args.omp_threads,
             ld_library_path=args.ld_library_path,
-            restart_every=args.restart_every)
+            restart_every=args.restart_every, field=field)
         traj = md["dump"]
         density = md["density_mol_A3"]
         meta.update({
