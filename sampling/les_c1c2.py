@@ -352,14 +352,15 @@ def _field_block(field, temperature, Lz):
         half = w * L / 2.0
         scale = (1.0 - w) * L / 2.0
         lines.append(f"variable u atom \"(v_za-{half:.8g})/{scale:.8g}\"")
-        # LAMMPS atom-style variables have no step()/if(); build the sign and
-        # the inside-window mask from clamp() and ramp().
-        lines.append("variable sgn atom \"clamp(1e6*v_zc,-1,1)\"")
-        lines.append("variable m1 atom \"ramp(v_u,1e-6)\"")
-        lines.append("variable m2 atom \"1.0-ramp(v_u-1.0,1e-6)\"")
+        # This LAMMPS build offers sign() but not step()/clamp() in atom-style
+        # variables: build the sign, the 0<u<1 window and clamp(u,0,1) from it.
+        lines.append("variable sgn atom \"sign(v_zc)\"")
+        lines.append("variable gt0 atom \"(sign(v_u)+1.0)*0.5\"")
+        lines.append("variable lt1 atom \"(1.0-sign(v_u-1.0))*0.5\"")
+        lines.append("variable uc atom \"v_u*v_gt0*v_lt1+(1.0-v_lt1)\"")
         lines.append(
             f"variable fw atom \"-{s*p/scale:.8g}*v_sgn"
-            f"*clamp(v_u,0,1)^{p-1:g}*v_m1*v_m2\"")
+            f"*v_uc^{p-1:g}*v_gt0*v_lt1\"")
     else:
         lines.append("variable fw atom \"0.0\"")
     terms = []
