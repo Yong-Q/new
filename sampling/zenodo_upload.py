@@ -240,6 +240,10 @@ def pending(root: Path, seen: dict, skip_state_files: bool = False,
             if first not in ("_bundles", "figures") and (root / first).is_dir():
                 # per-state files are archived in _bundles/<state>.tar.gz
                 continue
+        # Do not mirror runtime logs: the scientific content is in the
+        # bundles, figures, summary CSV and per-frame PE npz files.
+        if key.endswith(".log"):
+            continue
         size = p.stat().st_size
         if size == 0:            # Zenodo rejects empty files at commit
             continue
