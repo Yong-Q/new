@@ -433,6 +433,10 @@ def discover_states(root: Path):
                 cands = [p for p in root.glob(f"*/attempt-*/samples/{sid_arch}")
                          if p.is_dir() and "samples_old" not in str(p)]
             if not cands:
+                # field campaigns: field_runs/F1/attempt-01/samples/<sim_id>
+                cands = [p for p in root.glob(f"*/*/attempt-*/samples/{sid_arch}")
+                         if p.is_dir() and "samples_old" not in str(p)]
+            if not cands:
                 cands = [p for p in root.glob(f"samples/{sid_arch}") if p.is_dir()]
             if cands:
                 entries.append((sorted(cands)[-1], f))
