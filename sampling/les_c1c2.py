@@ -426,6 +426,7 @@ velocity all create {t_start:g} {seed} mom yes rot no dist gaussian
 {field_block}
 thermo {dump_every}
 thermo_style custom step temp pe
+thermo_modify format float %.16g
 run_style verlet/kk
 {equil_block}
 dump 1 all custom {dump_every} traj.dump id mol type x y z fx fy fz
@@ -468,6 +469,7 @@ neigh_modify every 10 delay 0 check yes
 timestep {timestep:g}
 thermo {dump_every}
 thermo_style custom step temp pe
+thermo_modify format float %.16g
 run_style verlet/kk"""]
     if phase == "equil":
         lines.append(_chunk_runs(equil_steps, 10000, "equil",
