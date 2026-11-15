@@ -131,7 +131,12 @@ def upload(record_id, key, path: Path, attempts: int = 3) -> bool:
 
 def _upload(record_id, key, path: Path) -> bool:
     key = key.replace(os.sep, "/")
-    if key in list_files(record_id):
+    existing = list_files(record_id)
+    if key in existing:
+        # Never delete a completed remote copy that already has the local
+        # size: a delete-then-failed-PUT would destroy the only backup.
+        if existing[key] == Path(path).stat().st_size:
+            return True
         delete_file(record_id, key)
     r = requests.post(f"{API}/records/{record_id}/draft/files",
                       json=[{"key": key}], headers=_headers(), timeout=60)
