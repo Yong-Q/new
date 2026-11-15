@@ -1,0 +1,65 @@
+{
+  "sim_id": "CO2_r05_field",
+  "species": "CO2",
+  "temperature_K": 463.6,
+  "density_mol_A3": 0.007717,
+  "traj": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/exact_campaign/traj_archive/CO2_r05_field.dump.gz",
+  "structure": {
+    "n_frames_used": 201,
+    "stride": 10,
+    "n_molecules": 667,
+    "bond_mean_A": 1.1646804375587987,
+    "bond_std_A": 0.017095265770754455,
+    "angle_mean_deg": 172.95993339727747,
+    "angle_std_deg": 3.667830191195688,
+    "p2_mean": 0.3327405610322771,
+    "q_tet_mean": 0.32298796998845714,
+    "q_tet_std": 0.24993947500756483,
+    "hb_per_molecule": null,
+    "g_peak": 1.3109414392940129,
+    "r_peak_A": 3.8,
+    "r_first_min_A": 4.36,
+    "coordination": 1.6735388272554192,
+    "pair_label": "C-C",
+    "pairs_file": "pairs.npz",
+    "pairs": [
+      "CC",
+      "CO",
+      "OO"
+    ],
+    "anisotropy_l1_max": 0.8006583973228417,
+    "anisotropy_l2_max": 0.6204723303355333,
+    "intra_mean": {
+      "bond_C-O": 1.1646798849105835,
+      "angle_O-C-O": 172.96287536621094
+    },
+    "axes_p2_mean": -0.007234352175146341,
+    "intra_frames": 200,
+    "com_frames": 2001,
+    "com_nmol": 667,
+    "msd_file": "com.npz"
+  },
+  "c1c2": {
+    "sim_id": "bulk-CO2-r0.007717-463.6K",
+    "species": "CO2",
+    "T_K": 463.6,
+    "density_mol_A3": 0.007717,
+    "n_frames": 201,
+    "bins": 2000,
+    "density_kind": "bulk",
+    "c2_pair": [
+      "C",
+      "O"
+    ],
+    "c2_rmax_A": 8.0,
+    "c2_bins": 80,
+    "rho_pair_A3": 0.007716858539373618,
+    "c2_short_trajectory": false,
+    "source": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/exact_campaign/traj_archive/CO2_r05_field.dump.gz",
+    "source_sha256": "d08d5d39e787f2d685313c95b1818e1df119b68df4593e4c7ed5458df8f777f6"
+  },
+  "c1c2_dirs": {
+    "f1": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/exact_campaign/analysis_scan/CO2_r05_field/c1c2/f1",
+    "f2": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/exact_campaign/analysis_scan/CO2_r05_field/c1c2/f2"
+  }
+}
