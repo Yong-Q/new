@@ -116,6 +116,33 @@ def delete_file(record_id, key):
                     headers=_headers(), timeout=60)
 
 
+def confirm_remote_mismatch(record_id, key, local_size, rounds=3, delay=2.0):
+    """True only when the remote size differs from local in EVERY round.
+
+    A remote file is never deleted on one read: a transient listing or a
+    concurrent uploader must not make us drop a completed backup.
+    """
+    for i in range(rounds):
+        cur = list_files(record_id).get(key)
+        if cur is None:                 # missing: there is nothing to delete
+            return True
+        if cur == local_size:           # already complete: keep it
+            return False
+        if i < rounds - 1:
+            time.sleep(delay)
+    return True
+
+
+def confirm_remote_size(record_id, key, local_size, rounds=3, delay=2.0):
+    """True only when the remote reports the exact local size ``rounds`` times."""
+    for i in range(rounds):
+        if list_files(record_id).get(key) == local_size:
+            return True
+        if i < rounds - 1:
+            time.sleep(delay)
+    return False
+
+
 def upload(record_id, key, path: Path, attempts: int = 3) -> bool:
     """Upload one file, retrying transient network errors with backoff."""
     for attempt in range(1, attempts + 1):
@@ -131,11 +158,17 @@ def upload(record_id, key, path: Path, attempts: int = 3) -> bool:
 
 def _upload(record_id, key, path: Path) -> bool:
     key = key.replace(os.sep, "/")
+    local_size = Path(path).stat().st_size
     existing = list_files(record_id)
     if key in existing:
         # Never delete a completed remote copy that already has the local
         # size: a delete-then-failed-PUT would destroy the only backup.
-        if existing[key] == Path(path).stat().st_size:
+        if existing[key] == local_size:
+            return True
+        # A remote delete needs three consecutive confirmations.  If any
+        # round reports the completed size, keep the remote copy untouched.
+        if not confirm_remote_mismatch(record_id, key, local_size):
+            print(f"[zenodo] {key}: remote already has the local size; keep it")
             return True
         delete_file(record_id, key)
     r = requests.post(f"{API}/records/{record_id}/draft/files",
@@ -157,7 +190,12 @@ def _upload(record_id, key, path: Path) -> bool:
     if r.status_code >= 400:
         print(f"[zenodo] commit failed {key}: {r.status_code} {r.text[:200]}")
         return False
-    print(f"[zenodo] uploaded {key} ({path.stat().st_size/1e6:.1f} MB)")
+    # Do not report success (and never let a caller delete the local source)
+    # until the draft reports the exact local byte size in three reads.
+    if not confirm_remote_size(record_id, key, local_size):
+        print(f"[zenodo] commit for {key} did not verify at {local_size} bytes")
+        return False
+    print(f"[zenodo] uploaded {key} ({local_size/1e6:.1f} MB; size verified 3x)")
     return True
 
 
@@ -244,8 +282,14 @@ def main(argv=None):
         src = Path(args.single_file)
         ok = upload(args.record_id, args.key, src)
         if ok and args.delete_after:
-            src.unlink()
-            print(f"[zenodo] deleted local {src}")
+            # upload() already verified the remote size three times; check
+            # once more immediately before removing the only local copy.
+            if confirm_remote_size(args.record_id, args.key,
+                                   src.stat().st_size, rounds=1):
+                src.unlink()
+                print(f"[zenodo] deleted local {src}")
+            else:
+                print(f"[zenodo] keeping local {src}: final size check failed")
         return 0 if ok else 1
 
     if not args.root:

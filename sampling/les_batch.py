@@ -226,17 +226,45 @@ def run_row(row: dict, args, outroot: Path) -> dict:
                             gzip.open(gz, "wb", compresslevel=5) as fo:
                         _shutil.copyfileobj(fi, fo, 8 << 20)
                     raw_bytes = traj_path.stat().st_size
+                    raw_sha = sha256(traj_path)
                     gz_sha = sha256(gz)
-                    traj_path.unlink()
-                    traj = str(gz)
-                    md["dump"] = traj
-                    md["dump_sha256"] = gz_sha
-                    meta.update({"traj": traj, "traj_sha256": gz_sha,
-                                 "traj_raw_bytes": raw_bytes,
-                                 "traj_gz_bytes": gz.stat().st_size})
-                    print(f"[batch] {sim_id}: compressed traj "
-                          f"{raw_bytes/1e9:.2f} -> "
-                          f"{gz.stat().st_size/1e9:.2f} GB")
+                    # Four confirmations before dropping the raw dump: three
+                    # full decompressions must reproduce the raw byte count
+                    # and SHA256, and the gzip must be byte-stable.
+                    verify_ok = True
+                    for _ in range(3):
+                        h = hashlib.sha256()
+                        n = 0
+                        try:
+                            with gzip.open(gz, "rb") as fh:
+                                while True:
+                                    buf = fh.read(8 << 20)
+                                    if not buf:
+                                        break
+                                    n += len(buf)
+                                    h.update(buf)
+                        except Exception as exc:         # noqa: BLE001
+                            verify_ok = False
+                            print(f"[batch] {sim_id}: gzip verify failed: {exc}")
+                            break
+                        if n != raw_bytes or h.hexdigest() != raw_sha:
+                            verify_ok = False
+                            break
+                    if not verify_ok:
+                        print(f"[batch] {sim_id}: compressed traj did not "
+                              f"verify; keeping the raw dump")
+                    else:
+                        traj_path.unlink()
+                        traj = str(gz)
+                        md["dump"] = traj
+                        md["dump_sha256"] = gz_sha
+                        meta.update({"traj": traj, "traj_sha256": gz_sha,
+                                     "traj_raw_bytes": raw_bytes,
+                                     "traj_gz_bytes": gz.stat().st_size})
+                        print(f"[batch] {sim_id}: compressed traj "
+                              f"{raw_bytes/1e9:.2f} -> "
+                              f"{gz.stat().st_size/1e9:.2f} GB "
+                              f"(3x decompression+SHA256 verified)")
             meta["status"] = "md_complete"
             (root / "meta.json").write_text(
                 json.dumps(meta, indent=2, default=str))

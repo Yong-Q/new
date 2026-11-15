@@ -20,7 +20,20 @@ import os
 import time
 from pathlib import Path
 
-from sampling.zenodo_upload import create_draft, new_version, upload
+from sampling.zenodo_upload import (create_draft, list_files, new_version,
+                                    upload)
+
+
+def _sha256(path: Path, chunk: int = 8 << 20) -> str:
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        while True:
+            buf = fh.read(chunk)
+            if not buf:
+                break
+            h.update(buf)
+    return h.hexdigest()
 
 
 def finished(root: Path, done: dict, archive_dir=None):
@@ -109,9 +122,27 @@ def main(argv=None):
                     shutil.copy2(traj, dst)
                     print(f"[traj] archived {dst.name} "
                           f"({dst.stat().st_size/1e6:.0f} MB)", flush=True)
-                if dst.stat().st_size == traj.stat().st_size:
+                # Never drop the worker copy on one successful stat: require
+                # three agreeing size reads AND an identical SHA256.
+                copy_ok = True
+                for _ in range(3):
+                    if not dst.exists() or dst.stat().st_size != traj.stat().st_size:
+                        copy_ok = False
+                        break
+                    time.sleep(1.0)
+                if copy_ok:
+                    try:
+                        copy_ok = _sha256(dst) == _sha256(traj)
+                    except Exception as exc:         # noqa: BLE001
+                        copy_ok = False
+                        print(f"[traj] hash check failed for {dst.name}: {exc}",
+                              flush=True)
+                if copy_ok:
                     traj.unlink()
-                traj = dst
+                    traj = dst
+                else:
+                    print(f"[traj] archive copy of {dst.name} not verified "
+                          f"(3x size + SHA256); keeping the original", flush=True)
             key = f"trajectories/{sid}.dump.gz" if traj.suffix == ".gz" \
                 else f"trajectories/{sid}.dump"
             size = traj.stat().st_size
@@ -127,7 +158,13 @@ def main(argv=None):
             ok = upload(recs[-1]["id"], key, traj)
             if ok:
                 if args.delete_after:
-                    traj.unlink()
+                    # upload() verified the remote size three times; one more
+                    # immediate read before dropping the only local copy.
+                    if list_files(recs[-1]["id"]).get(key) == size:
+                        traj.unlink()
+                    else:
+                        print(f"[traj] keeping {traj}: final remote size "
+                              f"check failed", flush=True)
                 recs[-1]["bytes"] += size
                 done[sid] = {"key": key, "record": recs[-1]["id"], "bytes": size}
                 save()
