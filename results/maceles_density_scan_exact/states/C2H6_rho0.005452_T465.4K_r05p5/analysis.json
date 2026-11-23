@@ -1,0 +1,68 @@
+{
+  "sim_id": "C2H6_rho0.005452_T465.4K_r05p5",
+  "species": "C2H6",
+  "temperature_K": 465.429878,
+  "density_mol_A3": 0.005452,
+  "traj": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/exact_campaign/dense_round_v4/task2/attempt-01/samples/C2H6_rho0.005452_T465.4K_r05p5/run/traj.dump.gz",
+  "structure": {
+    "n_frames_used": 201,
+    "stride": 5,
+    "n_molecules": 500,
+    "bond_mean_A": 1.6241211115361145,
+    "bond_std_A": 0.5082836016050111,
+    "angle_mean_deg": 111.2348161417945,
+    "angle_std_deg": 5.272465988772072,
+    "p2_mean": 0.33421393579341363,
+    "q_tet_mean": 0.29516256893172116,
+    "q_tet_std": 0.25204072373636033,
+    "hb_per_molecule": null,
+    "g_peak": 21.683645208693797,
+    "r_peak_A": 1.56,
+    "r_first_min_A": 1.72,
+    "coordination": 0.48644710622309006,
+    "pair_label": "C-C",
+    "pairs_file": "pairs.npz",
+    "pairs": [
+      "CC",
+      "CH",
+      "HH"
+    ],
+    "anisotropy_l1_max": 0.9999999999999999,
+    "anisotropy_l2_max": 1.0,
+    "intra_mean": {
+      "bond_C-C": 1.535300612449646,
+      "bond_C-H": 1.094761610031128,
+      "angle_C-C-H": 111.25225067138672,
+      "angle_H-C-H": 107.3658447265625,
+      "dihedral_H-C-C-H": 0.028523335233330727
+    },
+    "axes_p2_mean": 0.0015449374914169312,
+    "intra_frames": 200,
+    "com_frames": 1001,
+    "com_nmol": 500,
+    "msd_file": "com.npz"
+  },
+  "c1c2": {
+    "sim_id": "bulk-C2H6-r0.005452-465.429878K",
+    "species": "C2H6",
+    "T_K": 465.429878,
+    "density_mol_A3": 0.005452,
+    "n_frames": 101,
+    "bins": 2000,
+    "density_kind": "bulk",
+    "c2_pair": [
+      "C",
+      "C"
+    ],
+    "c2_rmax_A": 8.0,
+    "c2_bins": 80,
+    "rho_pair_A3": 0.010904000000031094,
+    "c2_short_trajectory": true,
+    "source": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/exact_campaign/dense_round_v4/task2/attempt-01/samples/C2H6_rho0.005452_T465.4K_r05p5/run/traj.dump.gz",
+    "source_sha256": "01c0655be145fafdc426155250188cddb3edf89cd3a744dc0a6a78da794bb584"
+  },
+  "c1c2_dirs": {
+    "f1": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/exact_campaign/analysis_scan/C2H6_rho0.005452_T465.4K_r05p5/c1c2/f1",
+    "f2": "/workspace/group/shared/bza/symmetrix-polar/bench/maceles_density_scan/exact_campaign/analysis_scan/C2H6_rho0.005452_T465.4K_r05p5/c1c2/f2"
+  }
+}
