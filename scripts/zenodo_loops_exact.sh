@@ -41,17 +41,9 @@ supervise() {
     done
 }
 
-supervise watch_exact "$PY" -m sampling.scan_watch \
-    --root "$EXACT_ROOT" --out "$LOGS" --interval "$SCAN_INTERVAL" --keep-traj &
-supervise mirror_exact "$PY" -m sampling.zenodo_upload \
-    --root "$LOGS" --kind analysis --record-id "$ANA_RECORD" \
-    --bundle-states --no-bundles --bundles-figures-only --watch "$WATCH" \
-    --bundles-since "$BUNDLES_SINCE" &
-supervise traj_exact "$PY" -m sampling.zenodo_batch_traj \
-    --root "$EXACT_ROOT" --record-id "$TRAJ_RECORD" --batch 3 --watch "$WATCH" \
-    --max-files 95 --archive-dir "$EXACT_ROOT/traj_archive" &
-supervise bundles_exact env SCAN_ROOT="$EXACT_ROOT" ANA="$LOGS" \
-    ANA_RECORD="$ANA_RECORD" \
-    BUNDLES_SINCE_TS="$(date -u -d "$BUNDLES_SINCE" +%s)" \
-    "$HERE/upload_bundles.sh" &
+# Owner directive (2026-11-25): no analysis post-processing for now — only
+# trajectory + per-frame PE packages.  The historical analysis loops
+# (watch/mirror/bundles) are deliberately not started; re-enable them when
+# the c1/c2 post-processing is wanted again.
+supervise traj_pe_exact "$PY" "$EXACT_ROOT/traj_pe_loop.py" &
 wait

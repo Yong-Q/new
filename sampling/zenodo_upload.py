@@ -288,6 +288,10 @@ def main(argv=None):
                     help="only mirror _bundles/<state>.tar.gz whose mtime is "
                          "at/after this ISO timestamp (e.g. 2026-11-20); "
                          "older bundles stay in their original record")
+    ap.add_argument("--max-files", type=int, default=0,
+                    help="open a fresh draft when the current record reaches "
+                         "this many files (Zenodo caps at 100/record); "
+                         "0 disables the check")
     args = ap.parse_args(argv)
     bundles_since = None
     if args.bundles_since:
@@ -390,6 +394,28 @@ def main(argv=None):
         reconcile_bundle_seen()
 
     while True:
+        if args.max_files > 0:
+            try:
+                nfiles = len(list_files(rec_id))
+            except Exception:                   # noqa: BLE001
+                nfiles = 0
+            if nfiles >= args.max_files:
+                kind_title = ("raw trajectories" if args.kind == "trajectories"
+                              else "c1/c2 and pair correlations")
+                rec = create_draft(
+                    args.kind,
+                    {"title": f"MACELES PRL density scan — {kind_title} "
+                              f"(continued {time.strftime('%Y-%m-%d %H:%M')})"})
+                rec_id = rec["id"]
+                state["record_id"] = rec_id
+                # Re-mirror summary/figures into the fresh record so it is
+                # self-describing; state bundles stay in their bundle records.
+                for k in [k for k in state.get("files", {})
+                          if not k.startswith("states/")]:
+                    state["files"].pop(k, None)
+                state_path.write_text(json.dumps(state, indent=2))
+                print(f"[zenodo] record reached {nfiles} files; continued in "
+                      f"record {rec_id}", flush=True)
         if args.bundle_states:
             refresh_bundles()
             reconcile_bundle_seen()
