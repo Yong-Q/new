@@ -56,6 +56,14 @@ def finished(root: Path, done: dict, archive_dir=None):
         sid = state.name
         if sid in done:
             continue
+        # Never archive a trajectory that is still being written: an
+        # in-progress dump grows frame by frame, and uploading/archiving it
+        # would both publish a truncated file and pin a stale archive copy.
+        try:
+            if json.loads(meta.read_text()).get("status") != "md_complete":
+                continue
+        except Exception:                        # noqa: BLE001
+            continue
         traj = state / "run" / "traj.dump.gz"
         if not traj.exists():
             traj = state / "run" / "traj.dump"
@@ -77,6 +85,10 @@ def main(argv=None):
     ap.add_argument("--max-bytes", type=float, default=45e9,
                     help="roll over to a new Zenodo record before this size "
                          "(Zenodo's limit is 50 GB per record)")
+    ap.add_argument("--max-files", type=int, default=0,
+                    help="roll over to a new draft when the current record "
+                         "reaches this many files (Zenodo caps at 100/record); "
+                         "0 disables the check")
     ap.add_argument("--delete-after", action="store_true",
                     help="remove the local file once Zenodo confirmed it "
                          "(default: keep it, space is not the constraint)")
@@ -95,6 +107,26 @@ def main(argv=None):
 
     def save():
         state_file.write_text(json.dumps(state, indent=2))
+
+    def record_file_count():
+        try:
+            return len(list_files(recs[-1]["id"]))
+        except Exception:                        # noqa: BLE001
+            return 0
+
+    def roll_if_full():
+        if args.max_files <= 0:
+            return
+        if record_file_count() < args.max_files:
+            return
+        rec = create_draft(
+            "trajectories",
+            {"title": "MACELES PRL density scan — raw trajectories (continued)"})
+        recs.append({"id": rec["id"], "bytes": 0})
+        save()
+        print(f"[traj] record {recs[-2]['id']} reached {args.max_files} files; "
+              f"continued in record {rec['id']} "
+              f"(record {len(recs)})", flush=True)
 
     while True:
         try:
@@ -138,8 +170,17 @@ def main(argv=None):
                         print(f"[traj] hash check failed for {dst.name}: {exc}",
                               flush=True)
                 if copy_ok:
-                    traj.unlink()
-                    traj = dst
+                    try:
+                        traj.unlink()
+                        traj = dst
+                    except OSError as exc:
+                        # Worker-owned files (uid nobody) cannot always be
+                        # unlinked from this identity.  The archive copy is
+                        # verified, so upload from the original instead of
+                        # aborting the whole pass.
+                        print(f"[traj] could not drop worker copy "
+                              f"{traj.name} ({type(exc).__name__}: {exc}); "
+                              f"uploading from the original", flush=True)
                 else:
                     print(f"[traj] archive copy of {dst.name} not verified "
                           f"(3x size + SHA256); keeping the original", flush=True)
@@ -155,6 +196,7 @@ def main(argv=None):
                 recs.append({"id": rec["id"], "bytes": 0})
                 print(f"[traj] continued in record {rec['id']} "
                       f"(version {len(recs)})", flush=True)
+            roll_if_full()
             ok = upload(recs[-1]["id"], key, traj)
             if ok:
                 if args.delete_after:

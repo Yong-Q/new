@@ -31,6 +31,7 @@ import argparse
 import json
 import os
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
@@ -226,7 +227,7 @@ def new_version(record_id):
 
 
 def pending(root: Path, seen: dict, skip_state_files: bool = False,
-            bundles_figures_only: bool = False):
+            bundles_figures_only: bool = False, bundles_since: float | None = None):
     for p in sorted(root.rglob("*")):
         if not p.is_file():
             continue
@@ -235,6 +236,11 @@ def pending(root: Path, seen: dict, skip_state_files: bool = False,
             first = key.split(os.sep)[0]
             if first not in ("_bundles", "figures") and key != "scan_summary.csv":
                 continue
+        if (bundles_since is not None and key.startswith("_bundles/")
+                and p.stat().st_mtime < bundles_since):
+            # Old-round bundles already live in their original record; a
+            # repointed uploader must not duplicate them into the new one.
+            continue
         if skip_state_files:
             first = key.split(os.sep)[0]
             if first not in ("_bundles", "figures") and (root / first).is_dir():
@@ -278,7 +284,17 @@ def main(argv=None):
     ap.add_argument("--key", help="remote key for --single-file")
     ap.add_argument("--delete-after", action="store_true")
     ap.add_argument("--state", default=None)
+    ap.add_argument("--bundles-since", default=None,
+                    help="only mirror _bundles/<state>.tar.gz whose mtime is "
+                         "at/after this ISO timestamp (e.g. 2026-11-20); "
+                         "older bundles stay in their original record")
     args = ap.parse_args(argv)
+    bundles_since = None
+    if args.bundles_since:
+        dt = datetime.fromisoformat(args.bundles_since)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        bundles_since = dt.timestamp()
 
     if args.single_file:
         if not args.record_id or not args.key:
@@ -356,6 +372,11 @@ def main(argv=None):
             return
         seen = state.setdefault("files", {})
         for b in bdir.glob("*.tar.gz"):
+            if (bundles_since is not None
+                    and b.stat().st_mtime < bundles_since):
+                # Old-round bundle: it lives in its original record and must
+                # not be pulled into a repointed record by reconciliation.
+                continue
             key = f"states/{b.name}"
             sig = (b.stat().st_size, int(b.stat().st_mtime))
             rsize = remote.get(key)
@@ -376,7 +397,8 @@ def main(argv=None):
         n = 0
         for key, path, sig in pending(
                 root, seen, skip_state_files=args.bundle_states,
-                bundles_figures_only=args.bundles_figures_only):
+                bundles_figures_only=args.bundles_figures_only,
+                bundles_since=bundles_since):
             if key.startswith(".zenodo_record"):
                 continue
             if args.no_bundles and key.startswith("_bundles/"):

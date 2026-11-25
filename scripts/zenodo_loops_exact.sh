@@ -14,8 +14,11 @@ REPO=$(cd -- "$HERE/.." && pwd -P)
 BZA=${BZA:-$(cd -- "$REPO/.." && pwd -P)}
 PY=${PY:-/opt/matos-tools/conda/envs/matos-compute/bin/python}
 EXACT_ROOT=${EXACT_ROOT:-$BZA/symmetrix-polar/bench/maceles_density_scan/exact_campaign}
-ANA_RECORD=${ANA_RECORD:-23901520}
-TRAJ_RECORD=${TRAJ_RECORD:-23901522}
+# 23901520 / 23901522 are full (Zenodo caps a record at 100 files); dense
+# rounds v4/v5 continue in fresh drafts with their own state bundles.
+ANA_RECORD=${ANA_RECORD:-24519705}
+TRAJ_RECORD=${TRAJ_RECORD:-24519703}
+BUNDLES_SINCE=${BUNDLES_SINCE:-2026-11-20}
 LOGS=${LOGS:-$EXACT_ROOT/analysis_scan}
 WATCH=${WATCH:-100}
 SCAN_INTERVAL=${SCAN_INTERVAL:-100}
@@ -42,10 +45,13 @@ supervise watch_exact "$PY" -m sampling.scan_watch \
     --root "$EXACT_ROOT" --out "$LOGS" --interval "$SCAN_INTERVAL" --keep-traj &
 supervise mirror_exact "$PY" -m sampling.zenodo_upload \
     --root "$LOGS" --kind analysis --record-id "$ANA_RECORD" \
-    --bundle-states --no-bundles --bundles-figures-only --watch "$WATCH" &
+    --bundle-states --no-bundles --bundles-figures-only --watch "$WATCH" \
+    --bundles-since "$BUNDLES_SINCE" &
 supervise traj_exact "$PY" -m sampling.zenodo_batch_traj \
     --root "$EXACT_ROOT" --record-id "$TRAJ_RECORD" --batch 3 --watch "$WATCH" \
-    --archive-dir "$EXACT_ROOT/traj_archive" &
+    --max-files 95 --archive-dir "$EXACT_ROOT/traj_archive" &
 supervise bundles_exact env SCAN_ROOT="$EXACT_ROOT" ANA="$LOGS" \
+    ANA_RECORD="$ANA_RECORD" \
+    BUNDLES_SINCE_TS="$(date -u -d "$BUNDLES_SINCE" +%s)" \
     "$HERE/upload_bundles.sh" &
 wait
